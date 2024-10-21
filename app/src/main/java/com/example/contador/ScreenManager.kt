@@ -1,5 +1,7 @@
 package com.example.contador
 
+import android.os.CountDownTimer
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +29,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+
 
 @Composable
 fun HomeScreen(){
@@ -100,39 +104,83 @@ fun Screen1(navController: NavController) {
 
 @Composable
 fun Screen2(navController: NavController) {
+    var setsRemaining by remember { mutableStateOf(0) }
+    var workTime by remember { mutableStateOf(0L) }
+    var restTime by remember { mutableStateOf(0L) }
+    var counter by remember { mutableStateOf<CounterDown?>(null) }
+    var currentScreen by remember { mutableStateOf("work") }
+    var workTimeSaved by remember { mutableStateOf(workTime) }
+
+    LaunchedEffect(Unit) {
+        setsRemaining = 4
+        workTime = 60
+        restTime = 10
+        workTimeSaved = workTime
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .fillMaxSize()
-
+        modifier = Modifier.fillMaxSize()
     ) {
-        Text(
-            text = "Screen 2",
-            color = Color.Blue,
-        )
+        val timeLeft = if (currentScreen == "work") workTime else restTime
+        Text(text = "Tiempo restante: $timeLeft segundos", color = Color.Blue)
+
         Button(onClick = {
-            navController.navigate("third_Screen")
+            if (setsRemaining > 0) {
+                counter = CounterDown(timeLeft) { remaining ->
+                    if (currentScreen == "work") {
+                        workTime = remaining
+                    } else {
+                        restTime = remaining
+                    }
+                }
+                counter?.start()
+                if (currentScreen == "work") {
+                    currentScreen = "work"
+                    if (timeLeft<=0){
+                    navController.navigate("third_Screen")
+                }}
+
+            }
+        }) {
+            Text("Iniciar Temporizador")
         }
-        ){
-            Text(text = "Cambiar Screen 3")
+
+        Button(onClick = {
+            counter?.cancel()
+        }) {
+            Text("Pausar")
+        }
+
+        Button(onClick = {
+            counter?.cancel()
+            workTime = workTimeSaved
+            
+            
+        }) {
+            Text("Reiniciar")
         }
     }
 }
 
 @Composable
 fun Screen3(navController: NavController) {
+    var setsRemaining by remember { mutableStateOf(0) }
+    var workTime by remember { mutableStateOf(60L) }
+
+    LaunchedEffect(Unit) {
+        workTime = workTime
+        setsRemaining -= 1
+    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .fillMaxSize()
-
+        modifier = Modifier.fillMaxSize()
     ) {
-        Text(
-            text = "Screen 3",
-            color = Color.Blue,
-        )
+        Text(text = "Tiempo de Trabajo", color = Color.Blue)
+        Text(text = "")
+
         Button(onClick = {
             navController.navigate("fourth_Screen")
         }
@@ -143,17 +191,17 @@ fun Screen3(navController: NavController) {
 }
 @Composable
 fun Screen4(navController: NavController) {
+    var restTime by remember { mutableStateOf(10L) }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .fillMaxSize()
-
+        modifier = Modifier.fillMaxSize()
     ) {
-        Text(
-            text = "Screen 4",
-            color = Color.Blue,
-        )
+        Text(text = "Tiempo de Descanso + $restTime", color = Color.Blue)
+
+
+
         Button(onClick = {
             navController.navigate("first_Screen")
         }
@@ -188,3 +236,35 @@ fun TimeSection(
 
     }}
 
+class CounterDown(var segundos: Long, var loquehacealhacertick: (Long) -> Unit) {
+    private var counterState: Boolean = false
+
+    private val myCounter = object : CountDownTimer((segundos * 1000L), 1000) {
+        override fun onTick(millisUntilFinished: Long) {
+            if (counterState) loquehacealhacertick(millisUntilFinished / 1000)
+        }
+
+        override fun onFinish() {
+            counterState = false
+            Log.i("CounterDown", "Tiempo finalizado")
+        }
+    }
+
+    fun toggle() {
+        if (this.counterState) {
+            this.cancel()
+        } else {
+            this.start()
+        }
+    }
+
+    fun start() {
+        counterState = true
+        this.myCounter.start()
+    }
+
+    fun cancel() {
+        counterState = false
+        this.myCounter.cancel()
+    }
+}
