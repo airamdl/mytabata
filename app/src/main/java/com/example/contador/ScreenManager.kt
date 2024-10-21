@@ -39,8 +39,16 @@ fun HomeScreen(){
         composable("first_Screen") {
             Screen1(navController = navController)
         }
-        composable("second_Screen") {
-            Screen2(navController = navController)
+        composable(
+            route ="second_Screen/{work}",
+
+
+        ) {
+            backStackEntry ->
+            val work= backStackEntry.arguments?.getString("work")
+            if (work!= null) {
+                Screen2(navController = navController, work)
+            }
         }
         composable("third_Screen") {
             Screen3(navController = navController)
@@ -91,7 +99,10 @@ fun Screen1(navController: NavController) {
 
         (Button(
             onClick = {
-                navController.navigate("second_Screen")
+                navController.navigate("second_Screen/{work}".replace(
+                    oldValue = "{work}",
+                    newValue = work.toString()
+                ))
             }
         ) {
             Text("Start Activity")
@@ -103,7 +114,7 @@ fun Screen1(navController: NavController) {
 }
 
 @Composable
-fun Screen2(navController: NavController) {
+fun Screen2(navController: NavController,work : String?) {
     var setsRemaining by remember { mutableStateOf(0) }
     var workTime by remember { mutableStateOf(0L) }
     var restTime by remember { mutableStateOf(0L) }
@@ -113,7 +124,7 @@ fun Screen2(navController: NavController) {
 
     LaunchedEffect(Unit) {
         setsRemaining = 4
-        workTime = 60
+        workTime = work?.toLong() ?: 0
         restTime = 10
         workTimeSaved = workTime
     }
